@@ -1,5 +1,3 @@
-cd ~/LiveChat
-cat > .gitignore << 'EOF'
 # Build directory
 build/
 
@@ -12,7 +10,7 @@ chat_server
 # Vim swap files
 *.swp
 
-# CMake generated
+# CMake generated files
 CMakeCache.txt
 CMakeFiles/
 Makefile
@@ -22,5 +20,11 @@ Makefile
 
 # Windows
 Thumbs.db
-EOF
+
+# Generated server build output
+server/build/
+
+# Ignore bundled third-party uWebSockets sources
+server/uWebSockets
 server/uWebSockets/
+server/uWebSockets/*

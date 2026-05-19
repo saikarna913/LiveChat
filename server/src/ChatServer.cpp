@@ -1,13 +1,9 @@
 #include "../include/ChatServer.hpp"
+#include "../include/PerSocketData.hpp"
 #include <string_view>
 #include <string>
 #include <iostream>
 #include <cstdlib>
-
-struct PerSocketData {
-    std::string username;
-    std::string roomId;
-};
 
 void ChatServer::run(int port) {
 
@@ -17,39 +13,68 @@ void ChatServer::run(int port) {
             std::cout << "Client connected\n";
         },
 
-        .message =
-        [this](auto* ws,
-               std::string_view message,
-               uWS::OpCode opCode) {
+       .message =
+[this](auto* ws,
+       std::string_view message,
+       uWS::OpCode opCode) {
 
-            auto* data = ws->getUserData();
+    auto* data = ws->getUserData();
 
-            std::string msg(message);
+    std::string msg(message);
 
-            // First message = room join
-            if (data->roomId.empty()) {
+    // JOIN ROOM
+    if (msg.rfind("JOIN:", 0) == 0) {
 
-                data->roomId = "main";
-                data->username =
-                    "user_" +
-                    std::to_string(rand() % 10000);
+        std::string roomId =
+            msg.substr(5);
 
-                roomManager.joinRoom(
-                    data->roomId,
-                    ws
-                );
+        data->roomId = roomId;
 
-                return;
-            }
+        data->username =
+            "user_" +
+            std::to_string(rand() % 10000);
 
-            std::string formatted =
-                data->username + ": " + msg;
+        roomManager.joinRoom(
+            roomId,
+            ws
+        );
 
-            roomManager.broadcast(
-                data->roomId,
-                formatted
+        ws->send(
+            "Joined room: " + roomId,
+            uWS::OpCode::TEXT
+        );
+
+        return;
+    }
+
+    // SEND MESSAGE
+    if (msg.rfind("MSG:", 0) == 0) {
+
+        if (data->roomId.empty()) {
+
+            ws->send(
+                "Join room first",
+                uWS::OpCode::TEXT
             );
-        },
+
+            return;
+        }
+
+        std::string text =
+            msg.substr(4);
+
+        std::string formatted =
+            "[" + data->roomId + "] " +
+            data->username +
+            ": " +
+            text;
+
+        roomManager.broadcastToRoom(
+            data->roomId,
+            formatted
+        );
+    }
+},
 
         .close =
         [this](auto* ws,

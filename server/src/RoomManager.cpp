@@ -1,27 +1,68 @@
-#include "RoomManager.hpp"
+#include "../include/RoomManager.hpp"
+
 #include <iostream>
 
-void RoomManager::joinRoom(const std::string& roomId, WebSocket* ws) {
-    rooms[roomId].insert(ws);
-    std::cout << "WebSocket joined room: " << roomId << std::endl;
+void RoomManager::joinRoom(
+    const std::string& roomId,
+    RoomManager::WebSocket* ws
+) {
+
+    if (!rooms.count(roomId)) {
+
+        rooms[roomId] =
+            std::make_unique<Room>(roomId);
+
+        std::cout
+            << "Created room: "
+            << roomId
+            << "\n";
+    }
+
+    rooms[roomId]->addClient(ws);
+
+    std::cout
+        << "User joined room "
+        << roomId
+        << " | users="
+        << rooms[roomId]->size()
+        << "\n";
 }
 
-void RoomManager::leaveRoom(const std::string& roomId, WebSocket* ws) {
-    auto it = rooms.find(roomId);
-    if (it != rooms.end()) {
-        it->second.erase(ws);
-        if (it->second.empty()) {
-            rooms.erase(it);
-        }
+void RoomManager::leaveRoom(
+    const std::string& roomId,
+    RoomManager::WebSocket* ws
+) {
+
+    if (!rooms.count(roomId))
+        return;
+
+    rooms[roomId]->removeClient(ws);
+
+    std::cout
+        << "User left room "
+        << roomId
+        << " | users="
+        << rooms[roomId]->size()
+        << "\n";
+
+    if (rooms[roomId]->empty()) {
+
+        rooms.erase(roomId);
+
+        std::cout
+            << "Deleted empty room: "
+            << roomId
+            << "\n";
     }
-    std::cout << "WebSocket left room: " << roomId << std::endl;
 }
 
-void RoomManager::broadcast(const std::string& roomId, const std::string& message) {
-    auto it = rooms.find(roomId);
-    if (it != rooms.end()) {
-        for (auto* ws : it->second) {
-            ws->send(message, uWS::OpCode::TEXT);
-        }
-    }
+void RoomManager::broadcastToRoom(
+    const std::string& roomId,
+    const std::string& msg
+) {
+
+    if (!rooms.count(roomId))
+        return;
+
+    rooms[roomId]->broadcast(msg);
 }

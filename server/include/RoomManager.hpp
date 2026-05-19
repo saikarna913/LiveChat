@@ -1,25 +1,37 @@
 #pragma once
-#include <unordered_map>
-#include <unordered_set>
-#include <string>
-#include "App.h"
 
-// Forward declare PerSocketData (defined in ChatServer.cpp)
-struct PerSocketData;
+#include "Room.hpp"
+#include "PerSocketData.hpp"
+
+#include <unordered_map>
+#include <memory>
+#include <string>
 
 class RoomManager {
 public:
-    using WebSocket = uWS::WebSocket<false, true, PerSocketData>;
 
-    void joinRoom(const std::string& roomId, WebSocket* ws);
+    using WebSocket =
+        uWS::WebSocket<false, true, PerSocketData>;
 
-    void leaveRoom(const std::string& roomId, WebSocket* ws);
+    void joinRoom(
+        const std::string& roomId,
+        WebSocket* ws
+    );
 
-    void broadcast(const std::string& roomId, const std::string& message);
+    void leaveRoom(
+        const std::string& roomId,
+        WebSocket* ws
+    );
+
+    void broadcastToRoom(
+        const std::string& roomId,
+        const std::string& msg
+    );
 
 private:
+
     std::unordered_map<
         std::string,
-        std::unordered_set<WebSocket*>>
-    rooms;
+        std::unique_ptr<Room>
+    > rooms;
 };
